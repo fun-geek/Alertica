@@ -1,0 +1,22 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    color: #333;
+    text-align: center;
+    padding: 50px;
+}
+
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 50%;
+    margin: auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+input, textarea, button {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+}

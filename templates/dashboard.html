@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard - ALERTICA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Send Alert</h2>
+        <form action="/send_alert" method="POST">
+            <label for="region">Target Region:</label>
+            <input type="text" name="region" required>
+
+            <label for="message">Alert Message:</label>
+            <textarea name="message" required></textarea>
+
+            <label>Send Via:</label><br>
+            <input type="checkbox" name="methods" value="sms"> SMS
+            <input type="checkbox" name="methods" value="email"> Email
+            <input type="checkbox" name="methods" value="push"> Push Notification<br><br>
+
+            <button type="submit">Send Alert</button>
+        </form>
+    </div>
+</body>
+</html>

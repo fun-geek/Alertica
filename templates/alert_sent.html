@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alert Sent - ALERTICA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Alert Sent!</h2>
+        <p><strong>Message:</strong> {{ message }}</p>
+        <p><strong>Region:</strong> {{ region }}</p>
+        <p><strong>Methods:</strong> {{ methods }}</p>
+        <a href="/dashboard">Back to Dashboard</a>
+    </div>
+</body>
+</html>
