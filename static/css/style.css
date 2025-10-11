@@ -11,6 +11,11 @@
     --form-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     --tab-active: #3498db;
     --template-bg: #f8f9fa;
+    --button-primary: #ff4757;
+    --button-secondary: #1e90ff;
+    --button-success: #2ed573;
+    --button-warning: #ff7f50;
+    --button-danger: #ff6b81;
 }
 
 /* Weather/Alert Background Effects */
@@ -277,7 +282,7 @@ body {
 }
 
 .btn-organization {
-    background: var(--secondary);
+    background: var(--button-secondary);
     color: white;
     padding: 12px;
     border: none;
@@ -286,15 +291,17 @@ body {
     cursor: pointer;
     margin-top: 10px;
     transition: all 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .btn-organization:hover {
-    background: #332faa;
+    background: #1a75ff;
     transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 .btn-citizen {
-    background: var(--accent);
+    background: var(--button-primary);
     color: white;
     padding: 12px;
     border: none;
@@ -303,11 +310,13 @@ body {
     cursor: pointer;
     margin-top: 10px;
     transition: all 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .btn-citizen:hover {
-    background: #ff5252;
+    background: #ff3347;
     transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Dashboard form styling */
@@ -349,7 +358,7 @@ body {
 }
 
 .container form button {
-    background: var(--primary);
+    background: var(--button-primary);
     color: white;
     padding: 12px;
     border: none;
@@ -358,11 +367,13 @@ body {
     cursor: pointer;
     margin-top: 10px;
     transition: all 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .container form button:hover {
-    background: #3a59e0;
+    background: var(--button-secondary);
     transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Checkbox styling */
