@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alert Map - ALERTICA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .alert-item {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border-left: 4px solid var(--primary);
+        }
+        .alert-time {
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container map-container">
+        <h1>Alert Map</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div id="map"></div>
+        
+        <h2>Recent Alerts</h2>
+        <div class="alerts-list">
+            {% if alerts %}
+                {% for alert in alerts|sort(attribute='timestamp', reverse=True) %}
+                    <div class="alert-item" data-region="{{ alert.region }}">
+                        <strong>{{ alert.message }}</strong>
+                        <div>Region: {{ alert.region }}</div>
+                        <div>Methods: {{ alert.methods|join(', ') }}</div>
+                        <div class="alert-time">{{ alert.timestamp }} by {{ alert.sent_by }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No alerts have been sent yet.</p>
+            {% endif %}
+        </div>
+        
+        <div class="nav-links">
+            {% if session.role == 'admin' %}
+                <a href="/dashboard">Go to Dashboard</a>
+            {% endif %}
+            <a href="/alerts">View All Alerts</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize map
+        var map = L.map('map').setView([20.5937, 78.9629], 5); // Default to India center
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Initialize the FeatureGroup to store editable layers
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        
+        // Initialize the draw control and pass it the FeatureGroup
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems,
+                poly: {
+                    allowIntersection: false
+                }
+            },
+            draw: {
+                polygon: {
+                    allowIntersection: false,
+                    showArea: true
+                },
+                polyline: false,
+                circle: true,
+                rectangle: true,
+                marker: false,
+                circlemarker: false
+            }
+        });
+        map.addControl(drawControl);
+        
+        // Event handler for when a shape is created
+        map.on(L.Draw.Event.CREATED, function(event) {
+            var layer = event.layer;
+            
+            // Get the shape coordinates
+            var shape = layer.toGeoJSON();
+            var shapeType = event.layerType;
+            
+            // Prompt for alert zone name
+            var zoneName = prompt("Enter a name for this alert zone:", "");
+            if (zoneName) {
+                // Add a popup with the zone name
+                layer.bindPopup("<b>" + zoneName + "</b><br>Custom Alert Zone");
+                
+                // Add the layer to the feature group
+                drawnItems.addLayer(layer);
+                
+                // Here you would typically save the zone to the database
+                console.log("Zone created:", {
+                    name: zoneName,
+                    type: shapeType,
+                    coordinates: shape
+                });
+                
+                // For demo purposes, show an alert
+                alert("Alert zone '" + zoneName + "' created successfully!");
+            }
+        });
+        
+        // Event handler for when a shape is edited
+        map.on(L.Draw.Event.EDITED, function(event) {
+            var layers = event.layers;
+            layers.eachLayer(function(layer) {
+                // Get updated shape
+                var shape = layer.toGeoJSON();
+                console.log("Zone edited:", shape);
+            });
+            alert("Alert zone(s) updated successfully!");
+        });
+        
+        // Event handler for when a shape is deleted
+        map.on(L.Draw.Event.DELETED, function(event) {
+            var layers = event.layers;
+            layers.eachLayer(function(layer) {
+                // Handle deleted shape
+                console.log("Zone deleted");
+            });
+            alert("Alert zone(s) deleted successfully!");
+        });
+        
+        // Sample coordinates for regions (in a real app, use a geocoding service)
+        const regionCoordinates = {
+            'Delhi': [28.7041, 77.1025],
+            'Mumbai': [19.0760, 72.8777],
+            'Bangalore': [12.9716, 77.5946],
+            'Chennai': [13.0827, 80.2707],
+            'Kolkata': [22.5726, 88.3639],
+            'Hyderabad': [17.3850, 78.4867],
+            'Pune': [18.5204, 73.8567],
+            'Ahmedabad': [23.0225, 72.5714],
+            'North India': [30.0, 77.0],
+            'South India': [13.0, 78.0],
+            'East India': [22.0, 88.0],
+            'West India': [20.0, 73.0],
+            'Central India': [23.0, 82.0],
+            'Northeast India': [26.0, 92.0]
+        };
+        
+        // Add markers for each alert
+        document.querySelectorAll('.alert-item').forEach(function(alertItem) {
+            const region = alertItem.dataset.region;
+            const coords = regionCoordinates[region] || [20.5937, 78.9629]; // Default to India center if region not found
+            
+            if (coords) {
+                const marker = L.marker(coords).addTo(map);
+                marker.bindPopup(`<b>${alertItem.querySelector('strong').textContent}</b><br>Region: ${region}`);
+            }
+        });
+    </script>
+</body>
+</html>

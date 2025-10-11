@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALERTICA - Analytics Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> ALERTICA Analytics</h1>
+            <p class="user-info">Logged in as: <span>{{ session.username }}</span> 
+                {% if user_role == 'admin' %}
+                <span class="role-badge admin">Admin</span>
+                {% elif user_role == 'approver' %}
+                <span class="role-badge approver">Approver</span>
+                {% elif user_role == 'creator' %}
+                <span class="role-badge creator">Creator</span>
+                {% endif %}
+            </p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('map_view') }}"><i class="fas fa-map-marked-alt"></i> Map</a></li>
+                <li><a href="{{ url_for('profile') }}"><i class="fas fa-user"></i> Profile</a></li>
+                {% if user_role == 'admin' %}
+                <li><a href="{{ url_for('admin') }}"><i class="fas fa-users-cog"></i> Admin</a></li>
+                {% endif %}
+                <li class="active"><a href="{{ url_for('analytics') }}"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <div class="analytics-header">
+                <h2>Post-Alert Analytics</h2>
+                <div class="analytics-filters">
+                    <div class="filter-group">
+                        <label>Date Range:</label>
+                        <input type="date" id="date-from" value="{{ today }}">
+                        <span>to</span>
+                        <input type="date" id="date-to" value="{{ today }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Alert:</label>
+                        <select id="alert-selector">
+                            <option value="all">All Alerts</option>
+                            {% for alert in alerts %}
+                            <option value="{{ alert.id }}">{{ alert.title }} ({{ alert.timestamp }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button id="apply-filters" class="btn primary">Apply Filters</button>
+                </div>
+            </div>
+
+            <div class="analytics-overview">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-bell"></i></div>
+                    <div class="stat-content">
+                        <h3>Total Alerts</h3>
+                        <p class="stat-value">{{ stats.total_alerts }}</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-content">
+                        <h3>Recipients</h3>
+                        <p class="stat-value">{{ stats.total_recipients }}</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-content">
+                        <h3>Delivery Rate</h3>
+                        <p class="stat-value">{{ stats.delivery_rate }}%</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="stat-content">
+                        <h3>Safe Responses</h3>
+                        <p class="stat-value">{{ stats.safe_responses }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3>Delivery by Method</h3>
+                    <div class="chart-container">
+                        <canvas id="delivery-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3>User Engagement</h3>
+                    <div class="chart-container">
+                        <canvas id="engagement-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card full-width">
+                    <h3>Alert Performance Timeline</h3>
+                    <div class="chart-container">
+                        <canvas id="timeline-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3>Geographic Reach</h3>
+                    <div class="chart-container">
+                        <canvas id="region-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3>Response Time</h3>
+                    <div class="chart-container">
+                        <canvas id="response-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analytics-section">
+                <h3>Citizen Reports</h3>
+                <div class="reports-table-container">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Location</th>
+                                <th>Description</th>
+                                <th>Severity</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>
+                                    <span class="report-type {{ report.report_type.lower() }}">
+                                        {{ report.report_type }}
+                                    </span>
+                                </td>
+                                <td>{{ report.location }}</td>
+                                <td class="report-description">{{ report.description }}</td>
+                                <td>
+                                    <span class="severity-badge {{ report.severity.lower() }}">
+                                        {{ report.severity }}
+                                    </span>
+                                </td>
+                                <td>{{ report.timestamp }}</td>
+                                <td>
+                                    <span class="status-badge {{ report.status.lower() }}">
+                                        {{ report.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="analytics-section">
+                <h3>Recommendations</h3>
+                <div class="recommendations-container">
+                    <div class="recommendation-card">
+                        <div class="recommendation-icon"><i class="fas fa-bullhorn"></i></div>
+                        <div class="recommendation-content">
+                            <h4>Improve SMS Delivery</h4>
+                            <p>SMS delivery rate is lower than email. Consider optimizing message length or using a different SMS gateway.</p>
+                        </div>
+                    </div>
+                    <div class="recommendation-card">
+                        <div class="recommendation-icon"><i class="fas fa-language"></i></div>
+                        <div class="recommendation-content">
+                            <h4>Add More Languages</h4>
+                            <p>Based on user demographics, consider adding Spanish and Chinese language support.</p>
+                        </div>
+                    </div>
+                    <div class="recommendation-card">
+                        <div class="recommendation-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="recommendation-content">
+                            <h4>Target Specific Areas</h4>
+                            <p>The West region has lower engagement. Consider more precise geofencing for this area.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize charts
+            initCharts();
+            
+            // Filter functionality
+            document.getElementById('apply-filters').addEventListener('click', function() {
+                const fromDate = document.getElementById('date-from').value;
+                const toDate = document.getElementById('date-to').value;
+                const alertId = document.getElementById('alert-selector').value;
+                
+                // In a real app, this would fetch new data from the server
+                console.log(`Filtering: from=${fromDate}, to=${toDate}, alert=${alertId}`);
+                
+                // For demo purposes, just reinitialize the charts
+                initCharts();
+                
+                // Show success message
+                alert('Analytics data updated!');
+            });
+        });
+        
+        function initCharts() {
+            // Delivery by method chart
+            const deliveryCtx = document.getElementById('delivery-chart').getContext('2d');
+            new Chart(deliveryCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['SMS', 'Email', 'Push'],
+                    datasets: [{
+                        data: [65, 25, 10],
+                        backgroundColor: ['#4CAF50', '#2196F3', '#FF9800']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // User engagement chart
+            const engagementCtx = document.getElementById('engagement-chart').getContext('2d');
+            new Chart(engagementCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Viewed', 'Marked Safe', 'Reported'],
+                    datasets: [{
+                        label: 'User Engagement',
+                        data: [85, 45, 15],
+                        backgroundColor: '#2196F3'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // Timeline chart
+            const timelineCtx = document.getElementById('timeline-chart').getContext('2d');
+            new Chart(timelineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['0min', '5min', '15min', '30min', '1hr', '2hr', '4hr', '8hr', '24hr'],
+                    datasets: [{
+                        label: 'Delivery',
+                        data: [0, 45, 75, 85, 90, 92, 93, 94, 95],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        fill: true
+                    }, {
+                        label: 'Viewed',
+                        data: [0, 20, 40, 55, 65, 70, 75, 80, 85],
+                        borderColor: '#2196F3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        fill: true
+                    }, {
+                        label: 'Safe Responses',
+                        data: [0, 5, 15, 25, 30, 35, 40, 42, 45],
+                        borderColor: '#FF9800',
+                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Since Alert'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Region chart
+            const regionCtx = document.getElementById('region-chart').getContext('2d');
+            new Chart(regionCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['North', 'South', 'East', 'West', 'Central'],
+                    datasets: [{
+                        label: 'Delivery Rate',
+                        data: [92, 88, 95, 90, 93],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.2)'
+                    }, {
+                        label: 'Engagement Rate',
+                        data: [75, 65, 80, 70, 85],
+                        borderColor: '#FF9800',
+                        backgroundColor: 'rgba(255, 152, 0, 0.2)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 50,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+
+            // Response time chart
+            const responseCtx = document.getElementById('response-chart').getContext('2d');
+            new Chart(responseCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['<5min', '5-15min', '15-30min', '30-60min', '>60min'],
+                    datasets: [{
+                        label: 'Safe Responses',
+                        data: [15, 25, 30, 20, 10],
+                        backgroundColor: '#4CAF50'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Responses'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Response Time'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

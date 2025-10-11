@@ -1,14 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ALERTICA - Early Alert System</title>
+    <title>ALERTICA - Emergency Alert System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>Welcome to ALERTICA</h1>
-        <p>A Community Early Alert System</p>
-        <a href="/dashboard">Go to Admin Dashboard</a>
+        <p>Advanced emergency alert system for disaster management</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="button-group">
+            {% if session.get('logged_in') %}
+                <div class="user-welcome">
+                    <h3>Welcome, {{ session.username }}!</h3>
+                    <p>
+                        {% if session.user_type == 'organization' %}
+                            🏢 Organization Portal
+                        {% else %}
+                            👤 Citizen Portal
+                        {% endif %}
+                    </p>
+                </div>
+                {% if session.role == 'admin' %}
+                    <a href="/dashboard" class="btn">Admin Dashboard</a>
+                {% endif %}
+                <a href="/map" class="btn">View Alert Map</a>
+                <a href="/alerts" class="btn">View Alerts</a>
+                <a href="/logout" class="btn btn-secondary">Logout</a>
+            {% else %}
+                <div class="login-options">
+                    <h3>Choose Your Access Type</h3>
+                    <div class="access-cards">
+                        <div class="access-card organization-card">
+                            <h4>🏢 Organization Access</h4>
+                            <p>For emergency services, government agencies, and authorized organizations</p>
+                            <ul>
+                                <li>Send emergency alerts</li>
+                                <li>Manage alert campaigns</li>
+                                <li>Access analytics dashboard</li>
+                            </ul>
+                            <a href="/login" class="btn btn-organization">Organization Login</a>
+                        </div>
+                        <div class="access-card citizen-card">
+                            <h4>👤 Citizen Access</h4>
+                            <p>For citizens who want to stay informed about emergency alerts</p>
+                            <ul>
+                                <li>View emergency alerts</li>
+                                <li>Interactive alert map</li>
+                                <li>Alert history</li>
+                            </ul>
+                            <a href="/login" class="btn btn-citizen">Citizen Login</a>
+                        </div>
+                    </div>
+                    <div class="register-section">
+                        <p>Don't have an account? <a href="/register" class="register-link">Register here</a></p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>

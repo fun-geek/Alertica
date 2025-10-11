@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alerts - ALERTICA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .alerts-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .alert-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+            text-align: left;
+        }
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .alert-region {
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .alert-time {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .alert-message {
+            margin-bottom: 10px;
+        }
+        .alert-methods {
+            display: flex;
+            gap: 10px;
+        }
+        .method-tag {
+            background: var(--accent);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .nav-links {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Alert History</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="alerts-container">
+            {% if alerts %}
+                {% for alert in alerts|sort(attribute='timestamp', reverse=True) %}
+                    <div class="alert-card">
+                        <div class="alert-header">
+                            <span class="alert-region">{{ alert.region }}</span>
+                            <span class="alert-time">{{ alert.timestamp }}</span>
+                        </div>
+                        <div class="alert-message">{{ alert.message }}</div>
+                        <div class="alert-methods">
+                            {% for method in alert.methods %}
+                                <span class="method-tag">{{ method }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="alert-sender">Sent by: {{ alert.sent_by }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No alerts have been sent yet.</p>
+            {% endif %}
+        </div>
+        
+        <div class="nav-links">
+            <a href="/map">View Alert Map</a>
+            {% if session.role == 'admin' %}
+                <a href="/dashboard">Go to Dashboard</a>
+            {% endif %}
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+</body>
+</html>

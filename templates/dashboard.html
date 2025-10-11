@@ -1,26 +1,468 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Dashboard - ALERTICA</title>
+    <title>ALERTICA Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/weather-effects.js') }}"></script>
 </head>
 <body>
     <div class="container">
-        <h2>Send Alert</h2>
-        <form action="/send_alert" method="POST">
-            <label for="region">Target Region:</label>
-            <input type="text" name="region" required>
-
-            <label for="message">Alert Message:</label>
-            <textarea name="message" required></textarea>
-
-            <label>Send Via:</label><br>
-            <input type="checkbox" name="methods" value="sms"> SMS
-            <input type="checkbox" name="methods" value="email"> Email
-            <input type="checkbox" name="methods" value="push"> Push Notification<br><br>
-
-            <button type="submit">Send Alert</button>
+        <h1>
+            {% if session.get('org_name') %}
+                {{ session.get('org_name') }} Dashboard
+            {% else %}
+                Admin Dashboard
+            {% endif %}
+        </h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3>Total Alerts</h3>
+                <div class="stat-value">{{ alerts|length }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Regions Covered</h3>
+                <div class="stat-value">{{ regions|length }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Users</h3>
+                <div class="stat-value">{{ users|length }}</div>
+            </div>
+        </div>
+        
+        <h2>Send New Alert</h2>
+        <form action="/send_alert" method="post">
+            <div class="form-tabs">
+                <button type="button" class="tab-btn active" onclick="showTab('custom')">Custom Alert</button>
+                <button type="button" class="tab-btn" onclick="showTab('template')">Alert Templates</button>
+            </div>
+            
+            <div id="custom-tab" class="tab-content active">
+                <div class="form-group">
+                    <label for="alert_type">Alert Type:</label>
+                    <select name="alert_type" id="alert_type" onchange="applyWeatherEffect(this.value)" required>
+                        <option value="">Select Type</option>
+                        <option value="Rain">Rain</option>
+                        <option value="Storm">Storm</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Snow">Snow</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Heat">Heat</option>
+                        <option value="Earthquake">Earthquake</option>
+                        <option value="Tornado">Tornado</option>
+                        <option value="Hurricane">Hurricane</option>
+                        <option value="Tsunami">Tsunami</option>
+                        <option value="Traffic">Traffic</option>
+                        <option value="Security">Security</option>
+                        <option value="Health">Health</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="target_type">Target Area:</label>
+                    <select name="target_type" id="target_type" onchange="toggleTargetOptions()" required>
+                        <option value="region">Region</option>
+                        <option value="custom_zone">Custom Zone</option>
+                        <option value="all">All Users</option>
+                    </select>
+                </div>
+                
+                <div id="region-selector" class="target-option">
+                    <div class="form-group">
+                        <label for="region">Region:</label>
+                        <select name="region" id="region">
+                            <option value="">Select a region</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Mumbai">Mumbai</option>
+                            <option value="Bangalore">Bangalore</option>
+                            <option value="Chennai">Chennai</option>
+                            <option value="Kolkata">Kolkata</option>
+                            <option value="Hyderabad">Hyderabad</option>
+                            <option value="Pune">Pune</option>
+                            <option value="Ahmedabad">Ahmedabad</option>
+                            <option value="North India">North India</option>
+                            <option value="South India">South India</option>
+                            <option value="East India">East India</option>
+                            <option value="West India">West India</option>
+                            <option value="Central India">Central India</option>
+                            <option value="Northeast India">Northeast India</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="custom-zone-selector" class="target-option" style="display:none;">
+                    <div class="form-group">
+                        <label for="custom_zone">Custom Zone:</label>
+                        <select name="custom_zone" id="custom_zone">
+                            <option value="">Select Custom Zone</option>
+                            <!-- Will be populated via JavaScript -->
+                        </select>
+                        <a href="/map" class="small-link">Create New Zone</a>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="language">Language:</label>
+                    <select name="language" id="language" onchange="translatePlaceholders()">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="hi">Hindi</option>
+                        <option value="zh">Chinese</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="title" id="label-title">Title:</label>
+                    <input type="text" name="title" id="title" placeholder="Brief alert title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message" id="label-message">Message:</label>
+                    <textarea name="message" id="message" placeholder="Detailed alert information" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="instructions" id="label-instructions">Instructions:</label>
+                    <textarea name="instructions" id="instructions" placeholder="What should people do?"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label id="label-send-via">Send via:</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sms" name="methods" value="SMS">
+                            <label for="sms">SMS</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="email" name="methods" value="Email">
+                            <label for="email">Email</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="push" name="methods" value="Push Notification">
+                            <label for="push">Push Notification</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="severity" id="label-severity">Severity Level:</label>
+                    <select id="severity" name="severity" required>
+                        <option value="low">Low - Informational</option>
+                        <option value="medium">Medium - Caution</option>
+                        <option value="high">High - Immediate Action</option>
+                        <option value="critical">Critical - Emergency</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expiration" id="label-expiration">Expiration:</label>
+                    <input type="datetime-local" name="expiration" id="expiration">
+                </div>
+            </div>
+            
+            <div id="template-tab" class="tab-content">
+                <div class="form-group">
+                    <label for="template">Select Template:</label>
+                    <select name="template" id="template" onchange="loadTemplate()">
+                        <option value="">Choose a template</option>
+                        <option value="severe_weather">Severe Weather Warning</option>
+                        <option value="evacuation">Evacuation Order</option>
+                        <option value="road_closure">Road Closure</option>
+                        <option value="power_outage">Power Outage</option>
+                        <option value="boil_water">Boil Water Advisory</option>
+                    </select>
+                </div>
+                <div id="template-preview" class="template-preview">
+                    <p>Select a template to preview</p>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn" id="send-btn">Send Alert</button>
         </form>
+        
+        <script>
+            // Tab switching
+            function showTab(tabName) {
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                document.getElementById(tabName + '-tab').classList.add('active');
+                document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`).classList.add('active');
+            }
+            
+            // Toggle target options based on selection
+            function toggleTargetOptions() {
+                const targetType = document.getElementById('target_type').value;
+                document.querySelectorAll('.target-option').forEach(option => {
+                    option.style.display = 'none';
+                });
+                
+                if (targetType === 'region') {
+                    document.getElementById('region-selector').style.display = 'block';
+                } else if (targetType === 'custom_zone') {
+                    document.getElementById('custom-zone-selector').style.display = 'block';
+                    loadCustomZones();
+                }
+            }
+            
+            // Load custom zones from the server
+            function loadCustomZones() {
+                // This would be an AJAX call in a real implementation
+                const zoneSelect = document.getElementById('custom_zone');
+                zoneSelect.innerHTML = '<option value="">Select Custom Zone</option>';
+                
+                // Placeholder data - would be loaded from server
+                const zones = [
+                    { id: 'zone1', name: 'Downtown' },
+                    { id: 'zone2', name: 'University Area' },
+                    { id: 'zone3', name: 'Industrial Park' }
+                ];
+                
+                zones.forEach(zone => {
+                    const option = document.createElement('option');
+                    option.value = zone.id;
+                    option.textContent = zone.name;
+                    zoneSelect.appendChild(option);
+                });
+            }
+            
+            // Load template data
+            function loadTemplate() {
+                const templateId = document.getElementById('template').value;
+                const previewDiv = document.getElementById('template-preview');
+                
+                if (!templateId) {
+                    previewDiv.innerHTML = '<p>Select a template to preview</p>';
+                    return;
+                }
+                
+                // Template data - would be loaded from server in real implementation
+                const templates = {
+                    severe_weather: {
+                        title: 'SEVERE WEATHER WARNING',
+                        message: 'The National Weather Service has issued a severe weather warning for your area. Strong winds and heavy rainfall expected.',
+                        instructions: 'Stay indoors, secure loose objects, and avoid travel if possible.',
+                        severity: 'high'
+                    },
+                    evacuation: {
+                        title: 'EVACUATION ORDER',
+                        message: 'An immediate evacuation has been ordered for your area due to imminent danger.',
+                        instructions: 'Gather essential items and proceed to the nearest evacuation center. Follow instructions from emergency personnel.',
+                        severity: 'critical'
+                    },
+                    road_closure: {
+                        title: 'ROAD CLOSURE ALERT',
+                        message: 'Major roads in your area are closed due to an incident.',
+                        instructions: 'Seek alternative routes and expect delays. Check local traffic updates before traveling.',
+                        severity: 'medium'
+                    },
+                    power_outage: {
+                        title: 'POWER OUTAGE NOTIFICATION',
+                        message: 'A power outage is affecting your area. Crews are working to restore service.',
+                        instructions: 'Conserve phone battery, use flashlights instead of candles, and keep refrigerator doors closed.',
+                        severity: 'medium'
+                    },
+                    boil_water: {
+                        title: 'BOIL WATER ADVISORY',
+                        message: 'Water system contamination possible in your area.',
+                        instructions: 'Boil all water for drinking and cooking for at least one minute. Safe for bathing but not consumption.',
+                        severity: 'high'
+                    }
+                };
+                
+                const template = templates[templateId];
+                
+                // Display template preview
+                previewDiv.innerHTML = `
+                    <div class="template-card">
+                        <h3>${template.title}</h3>
+                        <p><strong>Message:</strong> ${template.message}</p>
+                        <p><strong>Instructions:</strong> ${template.instructions}</p>
+                        <p><strong>Severity:</strong> ${template.severity}</p>
+                        <button type="button" onclick="applyTemplate('${templateId}')">Use This Template</button>
+                    </div>
+                `;
+            }
+            
+            // Apply template to form
+            function applyTemplate(templateId) {
+                // Same template data as above
+                const templates = {
+                    severe_weather: {
+                        title: 'SEVERE WEATHER WARNING',
+                        message: 'The National Weather Service has issued a severe weather warning for your area. Strong winds and heavy rainfall expected.',
+                        instructions: 'Stay indoors, secure loose objects, and avoid travel if possible.',
+                        severity: 'high',
+                        alert_type: 'Weather'
+                    },
+                    evacuation: {
+                        title: 'EVACUATION ORDER',
+                        message: 'An immediate evacuation has been ordered for your area due to imminent danger.',
+                        instructions: 'Gather essential items and proceed to the nearest evacuation center. Follow instructions from emergency personnel.',
+                        severity: 'critical',
+                        alert_type: 'Security'
+                    },
+                    road_closure: {
+                        title: 'ROAD CLOSURE ALERT',
+                        message: 'Major roads in your area are closed due to an incident.',
+                        instructions: 'Seek alternative routes and expect delays. Check local traffic updates before traveling.',
+                        severity: 'medium',
+                        alert_type: 'Traffic'
+                    },
+                    power_outage: {
+                        title: 'POWER OUTAGE NOTIFICATION',
+                        message: 'A power outage is affecting your area. Crews are working to restore service.',
+                        instructions: 'Conserve phone battery, use flashlights instead of candles, and keep refrigerator doors closed.',
+                        severity: 'medium',
+                        alert_type: 'Other'
+                    },
+                    boil_water: {
+                        title: 'BOIL WATER ADVISORY',
+                        message: 'Water system contamination possible in your area.',
+                        instructions: 'Boil all water for drinking and cooking for at least one minute. Safe for bathing but not consumption.',
+                        severity: 'high',
+                        alert_type: 'Health'
+                    }
+                };
+                
+                const template = templates[templateId];
+                
+                // Fill form with template data
+                document.getElementById('title').value = template.title;
+                document.getElementById('message').value = template.message;
+                document.getElementById('instructions').value = template.instructions;
+                document.getElementById('severity').value = template.severity;
+                document.getElementById('alert_type').value = template.alert_type;
+                
+                // Switch to custom tab to show the filled form
+                showTab('custom');
+            }
+            
+            // Translation data
+            const translations = {
+                en: {
+                    title: "Title",
+                    message: "Message",
+                    instructions: "Instructions",
+                    send_via: "Send via",
+                    severity: "Severity Level",
+                    expiration: "Expiration",
+                    title_placeholder: "Brief alert title",
+                    message_placeholder: "Detailed alert information",
+                    instructions_placeholder: "What should people do?",
+                    send_btn: "Send Alert"
+                },
+                es: {
+                    title: "Título",
+                    message: "Mensaje",
+                    instructions: "Instrucciones",
+                    send_via: "Enviar por",
+                    severity: "Nivel de Gravedad",
+                    expiration: "Expiración",
+                    title_placeholder: "Título breve de alerta",
+                    message_placeholder: "Información detallada de la alerta",
+                    instructions_placeholder: "¿Qué deben hacer las personas?",
+                    send_btn: "Enviar Alerta"
+                },
+                fr: {
+                    title: "Titre",
+                    message: "Message",
+                    instructions: "Instructions",
+                    send_via: "Envoyer via",
+                    severity: "Niveau de Sévérité",
+                    expiration: "Expiration",
+                    title_placeholder: "Titre bref d'alerte",
+                    message_placeholder: "Informations détaillées de l'alerte",
+                    instructions_placeholder: "Que doivent faire les gens?",
+                    send_btn: "Envoyer l'Alerte"
+                },
+                de: {
+                    title: "Titel",
+                    message: "Nachricht",
+                    instructions: "Anweisungen",
+                    send_via: "Senden über",
+                    severity: "Schweregrad",
+                    expiration: "Ablauf",
+                    title_placeholder: "Kurzer Alarmtitel",
+                    message_placeholder: "Detaillierte Alarminformationen",
+                    instructions_placeholder: "Was sollten die Leute tun?",
+                    send_btn: "Alarm Senden"
+                },
+                hi: {
+                    title: "शीर्षक",
+                    message: "संदेश",
+                    instructions: "निर्देश",
+                    send_via: "के माध्यम से भेजें",
+                    severity: "गंभीरता स्तर",
+                    expiration: "समाप्ति",
+                    title_placeholder: "संक्षिप्त अलर्ट शीर्षक",
+                    message_placeholder: "विस्तृत अलर्ट जानकारी",
+                    instructions_placeholder: "लोगों को क्या करना चाहिए?",
+                    send_btn: "अलर्ट भेजें"
+                },
+                zh: {
+                    title: "标题",
+                    message: "消息",
+                    instructions: "指示",
+                    send_via: "发送方式",
+                    severity: "严重程度",
+                    expiration: "到期时间",
+                    title_placeholder: "简短的警报标题",
+                    message_placeholder: "详细的警报信息",
+                    instructions_placeholder: "人们应该做什么？",
+                    send_btn: "发送警报"
+                }
+            };
+            
+            // Translate form based on selected language
+            function translatePlaceholders() {
+                const lang = document.getElementById('language').value;
+                const trans = translations[lang];
+                
+                // Update labels
+                document.getElementById('label-title').textContent = trans.title + ':';
+                document.getElementById('label-message').textContent = trans.message + ':';
+                document.getElementById('label-instructions').textContent = trans.instructions + ':';
+                document.getElementById('label-send-via').textContent = trans.send_via + ':';
+                document.getElementById('label-severity').textContent = trans.severity + ':';
+                document.getElementById('label-expiration').textContent = trans.expiration + ':';
+                
+                // Update placeholders
+                document.getElementById('title').placeholder = trans.title_placeholder;
+                document.getElementById('message').placeholder = trans.message_placeholder;
+                document.getElementById('instructions').placeholder = trans.instructions_placeholder;
+                
+                // Update button
+                document.getElementById('send-btn').textContent = trans.send_btn;
+            }
+            
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function() {
+                toggleTargetOptions();
+            });
+        </script>
+        
+        <div class="nav-links">
+            <a href="/map">View Alert Map</a>
+            <a href="/alerts">View All Alerts</a>
+            <a href="/logout">Logout</a>
+            <a href="/" class="back-link">Back to Home</a>
+        </div>
     </div>
 </body>
 </html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALERTICA - Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-shield-alt"></i> ALERTICA Admin</h1>
+            <p class="user-info">Logged in as: <span>{{ session.username }}</span> <span class="role-badge admin">Admin</span></p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('map_view') }}"><i class="fas fa-map-marked-alt"></i> Map</a></li>
+                <li><a href="{{ url_for('profile') }}"><i class="fas fa-user"></i> Profile</a></li>
+                <li class="active"><a href="{{ url_for('admin') }}"><i class="fas fa-users-cog"></i> Admin</a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="users">User Management</button>
+                <button class="tab-btn" data-tab="analytics">Alert Analytics</button>
+                <button class="tab-btn" data-tab="settings">System Settings</button>
+            </div>
+
+            <div class="tab-content" id="users-tab">
+                <div class="admin-section">
+                    <h2>User Management</h2>
+                    <div class="search-filter">
+                        <input type="text" id="user-search" placeholder="Search users...">
+                        <select id="role-filter">
+                            <option value="all">All Roles</option>
+                            <option value="admin">Admin</option>
+                            <option value="creator">Creator</option>
+                            <option value="approver">Approver</option>
+                            <option value="viewer">Viewer</option>
+                            <option value="citizen">Citizen</option>
+                        </select>
+                        <button id="add-user-btn" class="btn primary"><i class="fas fa-user-plus"></i> Add User</button>
+                    </div>
+
+                    <div class="user-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body">
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="role-badge {{ user.role.lower() }}">{{ user.role }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge {{ 'active' if user.active else 'inactive' }}">
+                                            {{ 'Active' if user.active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td class="actions">
+                                        <button class="btn small edit-user" data-id="{{ user.id }}"><i class="fas fa-edit"></i></button>
+                                        <button class="btn small danger delete-user" data-id="{{ user.id }}"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content hidden" id="analytics-tab">
+                <div class="admin-section">
+                    <h2>Alert Analytics</h2>
+                    
+                    <div class="analytics-filters">
+                        <div class="filter-group">
+                            <label>Date Range:</label>
+                            <input type="date" id="date-from" value="{{ today }}">
+                            <span>to</span>
+                            <input type="date" id="date-to" value="{{ today }}">
+                        </div>
+                        <div class="filter-group">
+                            <label>Alert Type:</label>
+                            <select id="alert-type-filter">
+                                <option value="all">All Types</option>
+                                <option value="weather">Weather</option>
+                                <option value="security">Security</option>
+                                <option value="health">Health</option>
+                                <option value="infrastructure">Infrastructure</option>
+                            </select>
+                        </div>
+                        <button id="apply-filters" class="btn primary">Apply Filters</button>
+                    </div>
+
+                    <div class="analytics-dashboard">
+                        <div class="analytics-card">
+                            <h3>Alert Delivery</h3>
+                            <div class="chart-container">
+                                <canvas id="delivery-chart"></canvas>
+                            </div>
+                            <div class="stat-summary">
+                                <div class="stat">
+                                    <span class="stat-value">{{ stats.total_alerts }}</span>
+                                    <span class="stat-label">Total Alerts</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value">{{ stats.delivery_rate }}%</span>
+                                    <span class="stat-label">Delivery Rate</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analytics-card">
+                            <h3>User Engagement</h3>
+                            <div class="chart-container">
+                                <canvas id="engagement-chart"></canvas>
+                            </div>
+                            <div class="stat-summary">
+                                <div class="stat">
+                                    <span class="stat-value">{{ stats.safe_responses }}</span>
+                                    <span class="stat-label">Safe Responses</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value">{{ stats.reports_submitted }}</span>
+                                    <span class="stat-label">Reports</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analytics-card full-width">
+                            <h3>Alert Performance by Region</h3>
+                            <div class="chart-container">
+                                <canvas id="region-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content hidden" id="settings-tab">
+                <div class="admin-section">
+                    <h2>System Settings</h2>
+                    
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <h3>Alert Workflow</h3>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="require-approval" name="require-approval" checked>
+                                    <label for="require-approval">Require approval for all alerts</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="auto-expire" name="auto-expire" checked>
+                                    <label for="auto-expire">Auto-expire alerts after default duration</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <h3>Default Alert Duration</h3>
+                            <div class="input-group">
+                                <input type="number" id="default-duration" name="default-duration" value="24">
+                                <select id="duration-unit">
+                                    <option value="hours">Hours</option>
+                                    <option value="days">Days</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <h3>System Notifications</h3>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="notify-new-users" name="notify-new-users" checked>
+                                    <label for="notify-new-users">Notify admins of new user registrations</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="notify-reports" name="notify-reports" checked>
+                                    <label for="notify-reports">Notify admins of new citizen reports</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="save-settings" class="btn primary">Save Settings</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for editing user roles -->
+    <div class="modal" id="user-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title">Edit User</h2>
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <select id="role" name="role" required>
+                        <option value="admin">Admin</option>
+                        <option value="creator">Creator</option>
+                        <option value="approver">Approver</option>
+                        <option value="viewer">Viewer</option>
+                        <option value="citizen">Citizen</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status" required>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn secondary" id="cancel-user">Cancel</button>
+                    <button type="submit" class="btn primary" id="save-user">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and hide all content
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                
+                // Add active class to clicked button and show corresponding content
+                button.classList.add('active');
+                document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
+            });
+        });
+
+        // User management functionality
+        const userModal = document.getElementById('user-modal');
+        const addUserBtn = document.getElementById('add-user-btn');
+        const closeModal = document.querySelector('.close-modal');
+        const cancelUser = document.getElementById('cancel-user');
+        const userForm = document.getElementById('user-form');
+        const userSearch = document.getElementById('user-search');
+        const roleFilter = document.getElementById('role-filter');
+
+        // Open modal for adding new user
+        addUserBtn.addEventListener('click', () => {
+            document.getElementById('modal-title').textContent = 'Add New User';
+            document.getElementById('user-id').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('role').value = 'citizen';
+            document.getElementById('status').value = 'active';
+            userModal.style.display = 'block';
+        });
+
+        // Close modal
+        closeModal.addEventListener('click', () => {
+            userModal.style.display = 'none';
+        });
+
+        cancelUser.addEventListener('click', () => {
+            userModal.style.display = 'none';
+        });
+
+        // Edit user
+        document.querySelectorAll('.edit-user').forEach(button => {
+            button.addEventListener('click', () => {
+                const userId = button.dataset.id;
+                // In a real app, you would fetch user data from the server
+                // For now, we'll use placeholder data
+                document.getElementById('modal-title').textContent = 'Edit User';
+                document.getElementById('user-id').value = userId;
+                
+                // Get user data from the table row
+                const row = button.closest('tr');
+                document.getElementById('username').value = row.cells[0].textContent;
+                document.getElementById('email').value = row.cells[1].textContent;
+                document.getElementById('role').value = row.cells[2].querySelector('.role-badge').textContent.toLowerCase();
+                document.getElementById('status').value = row.cells[3].querySelector('.status-badge').classList.contains('active') ? 'active' : 'inactive';
+                
+                userModal.style.display = 'block';
+            });
+        });
+
+        // Save user
+        userForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // In a real app, you would send this data to the server
+            const userData = {
+                id: document.getElementById('user-id').value,
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                role: document.getElementById('role').value,
+                active: document.getElementById('status').value === 'active'
+            };
+            
+            console.log('Saving user:', userData);
+            
+            // Close the modal
+            userModal.style.display = 'none';
+            
+            // Show success message
+            alert('User saved successfully!');
+        });
+
+        // Search and filter functionality
+        userSearch.addEventListener('input', filterUsers);
+        roleFilter.addEventListener('change', filterUsers);
+
+        function filterUsers() {
+            const searchTerm = userSearch.value.toLowerCase();
+            const roleValue = roleFilter.value;
+            
+            document.querySelectorAll('#user-table-body tr').forEach(row => {
+                const username = row.cells[0].textContent.toLowerCase();
+                const email = row.cells[1].textContent.toLowerCase();
+                const role = row.cells[2].querySelector('.role-badge').textContent.toLowerCase();
+                
+                const matchesSearch = username.includes(searchTerm) || email.includes(searchTerm);
+                const matchesRole = roleValue === 'all' || role === roleValue;
+                
+                row.style.display = matchesSearch && matchesRole ? '' : 'none';
+            });
+        }
+
+        // Initialize charts for analytics tab
+        function initCharts() {
+            // Delivery chart
+            const deliveryCtx = document.getElementById('delivery-chart').getContext('2d');
+            new Chart(deliveryCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['SMS', 'Email', 'Push'],
+                    datasets: [{
+                        data: [65, 25, 10],
+                        backgroundColor: ['#4CAF50', '#2196F3', '#FF9800']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Engagement chart
+            const engagementCtx = document.getElementById('engagement-chart').getContext('2d');
+            new Chart(engagementCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Viewed', 'Marked Safe', 'Reported'],
+                    datasets: [{
+                        label: 'User Engagement',
+                        data: [85, 45, 15],
+                        backgroundColor: '#2196F3'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // Region chart
+            const regionCtx = document.getElementById('region-chart').getContext('2d');
+            new Chart(regionCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['North', 'South', 'East', 'West', 'Central'],
+                    datasets: [{
+                        label: 'Delivery Rate (%)',
+                        data: [92, 88, 95, 90, 93],
+                        backgroundColor: '#4CAF50'
+                    }, {
+                        label: 'Engagement Rate (%)',
+                        data: [75, 65, 80, 70, 85],
+                        backgroundColor: '#FF9800'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts when analytics tab is shown
+        document.querySelector('[data-tab="analytics"]').addEventListener('click', () => {
+            setTimeout(initCharts, 100); // Small delay to ensure canvas is visible
+        });
+
+        // Settings functionality
+        document.getElementById('save-settings').addEventListener('click', () => {
+            // In a real app, you would send settings to the server
+            const settings = {
+                requireApproval: document.getElementById('require-approval').checked,
+                autoExpire: document.getElementById('auto-expire').checked,
+                defaultDuration: document.getElementById('default-duration').value,
+                durationUnit: document.getElementById('duration-unit').value,
+                notifyNewUsers: document.getElementById('notify-new-users').checked,
+                notifyReports: document.getElementById('notify-reports').checked
+            };
+            
+            console.log('Saving settings:', settings);
+            alert('Settings saved successfully!');
+        });
+    </script>
+</body>
+</html>

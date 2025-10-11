@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register - ALERTICA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Create an Account</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="register-sections">
+            <!-- Organization Registration Section -->
+            <div class="register-section organization-register">
+                <div class="register-header">
+                    <h2>🏢 Organization Registration</h2>
+                    <p>For emergency services, government agencies, and authorized organizations</p>
+                </div>
+                
+                <form action="/register" method="POST" class="register-form">
+                    <input type="hidden" name="account_type" value="organization">
+                    
+                    <label for="org_username">Organization ID / Username:</label>
+                    <input type="text" name="username" id="org_username" placeholder="Enter your organization ID" required>
+                    
+                    <label for="org_name">Organization Name:</label>
+                    <input type="text" name="org_name" id="org_name" placeholder="Enter your organization name" required>
+                    
+                    <label for="org_password">Password:</label>
+                    <input type="password" name="password" id="org_password" placeholder="Enter your password" required>
+                    
+                    <label for="org_confirm_password">Confirm Password:</label>
+                    <input type="password" name="confirm_password" id="org_confirm_password" placeholder="Confirm your password" required>
+                    
+                    <label for="org_code">Authorization Code:</label>
+                    <input type="text" name="auth_code" id="org_code" placeholder="Enter your authorization code" required>
+                    
+                    <button type="submit" class="btn-organization">Register as Organization</button>
+                </form>
+            </div>
+            
+            <!-- Normal User Registration Section -->
+            <div class="register-section user-register">
+                <div class="register-header">
+                    <h2>👤 Citizen Registration</h2>
+                    <p>For individuals who want to receive alerts</p>
+                </div>
+                
+                <form action="/register" method="POST" class="register-form">
+                    <input type="hidden" name="account_type" value="citizen">
+                    
+                    <label for="user_username">Username:</label>
+                    <input type="text" name="username" id="user_username" placeholder="Enter your username" required>
+                    
+                    <label for="user_password">Password:</label>
+                    <input type="password" name="password" id="user_password" placeholder="Enter your password" required>
+                    
+                    <label for="user_confirm_password">Confirm Password:</label>
+                    <input type="password" name="confirm_password" id="user_confirm_password" placeholder="Confirm your password" required>
+                    
+                    <button type="submit" class="btn-citizen">Register as Citizen</button>
+                </form>
+            </div>
+        </div>
+        
+        <p>Already have an account? <a href="/login">Login here</a></p>
+        <p><a href="/">Back to Home</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - ALERTICA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Login to ALERTICA</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="login-sections">
+            <!-- Organization Login Section -->
+            <div class="login-section organization-login">
+                <div class="login-header">
+                    <h2>🏢 Organization Login</h2>
+                    <p>For emergency services, government agencies, and authorized organizations</p>
+                </div>
+                
+                <form action="/login" method="POST" class="login-form">
+                    <input type="hidden" name="user_type" value="organization">
+                    
+                    <label for="org_username">Organization ID / Username:</label>
+                    <input type="text" name="username" id="org_username" placeholder="Enter your organization ID" required>
+                    
+                    <label for="org_password">Password:</label>
+                    <input type="password" name="password" id="org_password" placeholder="Enter your password" required>
+                    
+                    <button type="submit" class="btn-organization">Login as Organization</button>
+                </form>
+                
+                <div class="login-features">
+                    <h4>Organization Features:</h4>
+                    <ul>
+                        <li>✅ Send emergency alerts</li>
+                        <li>✅ Manage alert campaigns</li>
+                        <li>✅ View analytics dashboard</li>
+                        <li>✅ Access all regions</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Normal User Login Section -->
+            <div class="login-section user-login">
+                <div class="login-header">
+                    <h2>👤 Citizen Login</h2>
+                    <p>For citizens who want to stay informed about emergency alerts</p>
+                </div>
+                
+                <form action="/login" method="POST" class="login-form">
+                    <input type="hidden" name="user_type" value="citizen">
+                    
+                    <label for="user_username">Username:</label>
+                    <input type="text" name="username" id="user_username" placeholder="Enter your username" required>
+                    
+                    <label for="user_password">Password:</label>
+                    <input type="password" name="password" id="user_password" placeholder="Enter your password" required>
+                    
+                    <button type="submit" class="btn-citizen">Login as Citizen</button>
+                </form>
+                
+                <div class="login-features">
+                    <h4>Citizen Features:</h4>
+                    <ul>
+                        <li>📱 View emergency alerts</li>
+                        <li>🗺️ Interactive alert map</li>
+                        <li>📊 Alert history</li>
+                        <li>🔔 Personal notifications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="login-footer">
+            <p>Don't have an account? <a href="/register">Register here</a></p>
+            <p><a href="/">Back to Home</a></p>
+        </div>
+    </div>
+</body>
+</html>

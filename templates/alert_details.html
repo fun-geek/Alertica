@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert Details - ALERTICA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/weather-effects.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ALERTICA</h1>
+            <p>Emergency Alert System</p>
+        </header>
+
+        <main>
+            <div class="alert-details">
+                <div class="alert-card alert-{{ alert.severity }}">
+                    <div class="alert-header">
+                        <h2>{{ alert.title }}</h2>
+                        <span class="alert-time">{{ alert.timestamp }}</span>
+                        <span class="alert-severity">{{ alert.severity|title }}</span>
+                    </div>
+                    <div class="alert-body">
+                        <p class="alert-message">{{ alert.message }}</p>
+                        {% if alert.instructions %}
+                        <div class="alert-instructions">
+                            <h3>Instructions:</h3>
+                            <p>{{ alert.instructions }}</p>
+                        </div>
+                        {% endif %}
+                        <div class="alert-meta">
+                            <p><strong>Region:</strong> {{ alert.region }}</p>
+                            <p><strong>Type:</strong> {{ alert.alert_type }}</p>
+                            {% if alert.expiration %}
+                            <p><strong>Valid until:</strong> {{ alert.expiration }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- I am Safe Button -->
+                    <div class="alert-actions">
+                        {% if not marked_safe %}
+                        <button id="safe-button" class="safe-btn" onclick="markSafe('{{ alert.id }}')">
+                            I AM SAFE
+                        </button>
+                        <p id="safe-confirmation" style="display: none; color: var(--success-color); text-align: center; margin-top: 10px;">
+                            You have been marked as safe. Thank you for confirming your status.
+                        </p>
+                        {% else %}
+                        <p style="color: var(--success-color); text-align: center; margin-top: 10px;">
+                            You have been marked as safe for this alert.
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Citizen Reporting -->
+                <div class="report-form">
+                    <h3>Report Information</h3>
+                    <p>Share on-the-ground information to help others</p>
+                    
+                    <form id="report-form" onsubmit="submitReport(event, '{{ alert.id }}')">
+                        <div class="form-group">
+                            <label for="report-type">Report Type:</label>
+                            <select id="report-type" name="report_type" required>
+                                <option value="">Select Type</option>
+                                <option value="road_blockage">Road Blockage</option>
+                                <option value="flooding">Flooding</option>
+                                <option value="fire">Fire</option>
+                                <option value="medical_need">Medical Need</option>
+                                <option value="power_outage">Power Outage</option>
+                                <option value="structural_damage">Structural Damage</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="report-location">Location:</label>
+                            <input type="text" id="report-location" name="location" placeholder="Describe the location" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="report-description">Description:</label>
+                            <textarea id="report-description" name="description" placeholder="Provide details about the situation" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="report-severity">Severity:</label>
+                            <select id="report-severity" name="severity" required>
+                                <option value="low">Low - Minor issue</option>
+                                <option value="medium">Medium - Significant concern</option>
+                                <option value="high">High - Urgent attention needed</option>
+                                <option value="critical">Critical - Life-threatening</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn">Submit Report</button>
+                    </form>
+                    
+                    <div id="report-success" style="display: none; color: var(--success-color); text-align: center; margin-top: 15px;">
+                        Your report has been submitted. Thank you for contributing to community safety.
+                    </div>
+                </div>
+                
+                <!-- Community Reports -->
+                <div class="community-reports">
+                    <h3>Community Reports</h3>
+                    {% if reports %}
+                        {% for report in reports %}
+                        <div class="report-card report-{{ report.severity }}">
+                            <div class="report-header">
+                                <span class="report-type">{{ report.report_type|replace('_', ' ')|title }}</span>
+                                <span class="report-time">{{ report.timestamp }}</span>
+                                <span class="report-severity">{{ report.severity|title }}</span>
+                            </div>
+                            <div class="report-body">
+                                <p class="report-location"><strong>Location:</strong> {{ report.location }}</p>
+                                <p class="report-description">{{ report.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="no-reports">No community reports yet. Be the first to share information.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+
+        <div class="nav-links">
+            <a href="/dashboard">Back to Dashboard</a>
+            <a href="/map">View Alert Map</a>
+        </div>
+    </div>
+
+    <script>
+        function markSafe(alertId) {
+            fetch('/mark_safe/' + alertId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('safe-button').style.display = 'none';
+                    document.getElementById('safe-confirmation').style.display = 'block';
+                } else {
+                    alert('Failed to mark as safe. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+        
+        function submitReport(event, alertId) {
+            event.preventDefault();
+            
+            const formData = new FormData(document.getElementById('report-form'));
+            const reportData = {
+                alert_id: alertId,
+                report_type: formData.get('report_type'),
+                location: formData.get('location'),
+                description: formData.get('description'),
+                severity: formData.get('severity')
+            };
+            
+            fetch('/submit_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(reportData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('report-form').reset();
+                    document.getElementById('report-success').style.display = 'block';
+                    
+                    // Hide success message after 5 seconds
+                    setTimeout(() => {
+                        document.getElementById('report-success').style.display = 'none';
+                    }, 5000);
+                    
+                    // Reload page after 1 second to show the new report
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('Failed to submit report. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>
