@@ -48,10 +48,10 @@ python "Main py/app.py"
 ```
 
 ## Usage
-1. Register as an organization or citizen
-2. Login to access the dashboard
-3. Create and send alerts (organization users)
-4. View and respond to alerts (citizens)
+1. Register as an organization or citizen .
+2. Login to access the dashboard .
+3. Create and send alerts (organization users) .
+4. View and respond to alerts (citizens) .
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
